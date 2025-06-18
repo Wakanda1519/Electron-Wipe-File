@@ -1,7 +1,6 @@
 # Electron Wipe Fipe
 
 ![Electron](https://img.shields.io/badge/Electron-Framework-blue?style=flat-square&logo=electron)
-![Open Source](https://img.shields.io/badge/Open%2520Source-Yes-brightgreen?style=flat-square)
 
 Инструмент позволяет в удобном формате удалять определённые файлы или удалять файлы с определёнными расширениями в папке
 
