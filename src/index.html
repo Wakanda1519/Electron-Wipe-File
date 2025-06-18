@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wipe File v1.0.0</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    body {
+      overflow: hidden;
+      background-color: #f8f9fa;
+    }
+    .app-header {
+      background-color: #343a40;
+      color: white;
+      padding: 15px 0;
+      margin-bottom: 20px;
+    }
+    .operation-card {
+      margin-bottom: 15px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .operation-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .card-body {
+      padding: 1.25rem;
+    }
+    .edit-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      color: #6c757d;
+      font-size: 1.2rem;
+    }
+    .edit-btn:hover {
+      color: #343a40;
+    }
+    .modal-body {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .success-log {
+      color: #28a745;
+    }
+    .error-log {
+      color: #dc3545;
+    }
+    .operations-container {
+      height: calc(100vh - 150px);
+      overflow-y: auto;
+      padding: 0 15px;
+    }
+    .spinner-border {
+      width: 1rem;
+      height: 1rem;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 50px 0;
+      color: #6c757d;
+    }
+    
+    /* Новые стили для адаптивных логов */
+    .logs-section {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    .logs-section ul {
+      padding-left: 20px;
+      margin-bottom: 15px;
+    }
+    .logs-section li {
+      word-break: break-word;
+      white-space: normal;
+      margin-bottom: 5px;
+      line-height: 1.4;
+    }
+    #logsContent h6 {
+      margin-top: 15px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Заголовок приложения -->
+  <div class="app-header">
+    <div class="container d-flex justify-content-between align-items-center">
+      <h1 class="h4 mb-0">Wipe File</h1>
+      <div>
+        <button id="helpBtn" class="btn btn-outline-light me-2">
+          <i class="bi bi-question-circle"></i>
+        </button>
+        <button id="addOperationBtn" class="btn btn-primary">
+          <i class="bi bi-plus-circle me-1"></i> Добавить операцию
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Основной контент -->
+  <div class="container">
+    <div id="operationsContainer" class="operations-container">
+      <!-- Здесь будут отображаться операции -->
+      <div class="empty-state" id="emptyState">
+        <i class="bi bi-folder-x" style="font-size: 3rem;"></i>
+        <h4 class="mt-3">Нет операций</h4>
+        <p>Нажмите "Добавить операцию", чтобы начать</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно добавления/редактирования операции -->
+  <div class="modal fade" id="operationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="operationModalTitle">Добавить операцию</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="operationForm">
+            <input type="hidden" id="operationId">
+            <div class="mb-3">
+              <label for="operationName" class="form-label">Название операции</label>
+              <input type="text" class="form-control" id="operationName" placeholder="Введите название операции" required>
+            </div>
+            
+            <div class="card mb-4">
+              <div class="card-header">
+                <h6 class="mb-0">Добавить файл или папку</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">Тип</label>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="operationType" id="typeFile" value="file" checked>
+                    <label class="form-check-label" for="typeFile">Файл</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="operationType" id="typeDirectory" value="directory">
+                    <label class="form-check-label" for="typeDirectory">Папка</label>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label for="pathDisplay" class="form-label">Путь</label>
+                  <div class="input-group">
+                    <input type="text" class="form-control" id="pathDisplay" readonly>
+                    <button class="btn btn-outline-secondary" type="button" id="selectPathBtn">Выбрать</button>
+                  </div>
+                  <input type="hidden" id="pathValue">
+                </div>
+                <div class="mb-3" id="extensionsGroup" style="display: none;">
+                  <label for="extensions" class="form-label">Расширения файлов (через запятую)</label>
+                  <input type="text" class="form-control" id="extensions" placeholder="Например: .log, .tmp">
+                </div>
+                <button type="button" class="btn btn-primary" id="addItemBtn">
+                  <i class="bi bi-plus-circle me-1"></i> Добавить элемент
+                </button>
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Выбранные элементы</h6>
+              </div>
+              <div class="list-group list-group-flush" id="selectedItemsList">
+                <div class="text-muted text-center py-3">Нет выбранных элементов</div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger me-auto" id="deleteOperationBtn" style="display: none;">Удалить операцию</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="button" class="btn btn-success" id="saveOperationBtn">Создать операцию</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно логов -->
+  <div class="modal fade" id="logsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="logsModalTitle">Логи операции</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="logsContainer">
+            <div id="logsSpinner" class="text-center p-4">
+              <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Загрузка...</span>
+              </div>
+              <p class="mt-2">Выполнение операции...</p>
+            </div>
+            <div id="logsContent" style="display: none;">
+              <h6>Успешно удалены:</h6>
+              <div class="logs-section">
+                <ul id="successLogs" class="success-log"></ul>
+              </div>
+              
+              <h6>Ошибки:</h6>
+              <div class="logs-section">
+                <ul id="errorLogs" class="error-log"></ul>
+              </div>
+              
+              <div class="mt-3 pt-3 border-top">
+                <h6 id="logsSummary" class="fw-bold"></h6>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно справки -->
+  <div class="modal fade" id="helpModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Как работать с приложением</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-4">
+            <h5>Создание операции</h5>
+            <ol>
+              <li>Нажмите кнопку <strong>"Добавить операцию"</strong> в верхней части экрана.</li>
+              <li>Введите название операции в соответствующее поле.</li>
+              <li>Выберите тип элемента (файл или папка).</li>
+              <li>Нажмите кнопку <strong>"Выбрать"</strong> и укажите путь к файлу или папке.</li>
+              <li>Если выбрана папка, укажите расширения файлов через запятую (например: .log, .tmp).</li>
+              <li>Нажмите кнопку <strong>"Добавить элемент"</strong>, чтобы добавить его в список.</li>
+              <li>Повторите шаги 3-6, чтобы добавить дополнительные файлы или папки.</li>
+              <li>Нажмите кнопку <strong>"Создать операцию"</strong>, чтобы сохранить.</li>
+            </ol>
+          </div>
+          
+          <div class="mb-4">
+            <h5>Выполнение операции</h5>
+            <ol>
+              <li>Нажмите на карточку операции на главном экране.</li>
+              <li>Дождитесь завершения операции.</li>
+              <li>Просмотрите логи выполнения, которые показывают успешно удаленные файлы и ошибки.</li>
+            </ol>
+          </div>
+          
+          <div class="mb-4">
+            <h5>Редактирование операции</h5>
+            <ol>
+              <li>Нажмите на иконку <strong>⚙️</strong> на карточке операции.</li>
+              <li>Внесите необходимые изменения.</li>
+              <li>Нажмите кнопку <strong>"Сохранить изменения"</strong>.</li>
+            </ol>
+          </div>
+          
+          <div>
+            <h5>Удаление операции</h5>
+            <ol>
+              <li>Нажмите на иконку <strong>⚙️</strong> на карточке операции.</li>
+              <li>Нажмите кнопку <strong>"Удалить операцию"</strong>.</li>
+              <li>Подтвердите удаление.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS и Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Скрипт приложения -->
+  <script src="renderer.js"></script>
+</body>
+</html> 
